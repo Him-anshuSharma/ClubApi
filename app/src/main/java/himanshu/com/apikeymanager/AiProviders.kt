@@ -106,9 +106,9 @@ class HuggingFaceProvider(override var apiKeyManager: ApiKeyManager? = null, pri
     private val client = OkHttpClient.Builder().callTimeout(timeoutSeconds, TimeUnit.SECONDS).build()
     override fun setApiKey(key: String) { apiKey = key }
     override suspend fun sendRequest(prompt: String): String {
-        val useModel = apiKeyManager?.getDefaultModelForProvider(name) ?: "deepseek-ai/DeepSeek-R1-0528"
+        val useModel = apiKeyManager?.getDefaultModelForProvider(name) ?: "Qwen/Qwen2-7B-Instruct"
         Log.d("${name}Provider", "Using model: $useModel")
-        val url = "https://router.huggingface.co/nebius/v1/chat/completions"
+        val url = "https://router.huggingface.co/featherless-ai/v1/chat/completions"
         val requestObj = OpenAIChatRequest(useModel, listOf(OpenAIMessage("user", prompt)))
         val jsonBody = moshi.adapter(OpenAIChatRequest::class.java).toJson(requestObj)
         val request = Request.Builder()
