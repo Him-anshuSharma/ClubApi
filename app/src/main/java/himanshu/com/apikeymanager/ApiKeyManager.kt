@@ -11,19 +11,7 @@ class ApiKeyManager(private val context: Context) {
     private var providerConfigs: Map<String, Map<String, Any>> = mapOf()
 
     init {
-        ensureFileExists()
         loadKeys()
-    }
-
-    private fun ensureFileExists() {
-        val file = context.getFileStreamPath(fileName)
-        if (!file.exists()) {
-            // Create a default YAML file
-            val defaultYaml = "api_keys:\n  Gemini:\n    - YOUR_GEMINI_KEY1\n    - YOUR_GEMINI_KEY2\n  HuggingFace:\n    - YOUR_HF_KEY1\n    - YOUR_HF_KEY2\n  OpenRouter:\n    - YOUR_OPENROUTER_KEY1\n  Groq:\n    - YOUR_GROQ_KEY1\n  ArliAI:\n    - YOUR_ARLIAI_KEY1\n  ShaleProtocol:\n    - YOUR_SHALE_KEY1\n"
-            context.openFileOutput(fileName, Context.MODE_PRIVATE).use { fos ->
-                fos.write(defaultYaml.toByteArray())
-            }
-        }
     }
 
     private fun loadKeys() {
