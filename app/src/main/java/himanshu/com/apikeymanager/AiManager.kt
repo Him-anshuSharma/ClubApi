@@ -11,15 +11,15 @@ import kotlinx.coroutines.sync.withLock
  *   val aiManager = AiManager(context)
  *   val result = aiManager.postRequest("your prompt", model = "optional-model")
  */
-class AiManager(private val context: Context) {
+class AiManager(private val context: Context, private val timeoutSeconds: Long = 60) {
     private val apiKeyManager = ApiKeyManager(context)
     private val providers: List<AiProvider> = listOf(
-        GeminiProvider(apiKeyManager),
-        HuggingFaceProvider(apiKeyManager),
-        OpenRouterProvider(apiKeyManager),
-        GroqProvider(apiKeyManager),
-//        ArliAIProvider(apiKeyManager),
-//        ShaleProtocolProvider(apiKeyManager)
+        GeminiProvider(apiKeyManager, timeoutSeconds),
+        HuggingFaceProvider(apiKeyManager, timeoutSeconds),
+        OpenRouterProvider(apiKeyManager, timeoutSeconds),
+        GroqProvider(apiKeyManager, timeoutSeconds),
+//        ArliAIProvider(apiKeyManager, timeoutSeconds),
+//        ShaleProtocolProvider(apiKeyManager, timeoutSeconds)
     )
     private var requestIndex = 0
     private val mutex = Mutex()

@@ -8,6 +8,7 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import com.squareup.moshi.JsonClass
+import java.util.concurrent.TimeUnit
 
 interface AiProvider {
     val name: String
@@ -45,10 +46,10 @@ private val moshi: Moshi = Moshi.Builder()
     .add(KotlinJsonAdapterFactory())
     .build()
 
-class GeminiProvider(override var apiKeyManager: ApiKeyManager? = null) : AiProvider {
+class GeminiProvider(override var apiKeyManager: ApiKeyManager? = null, private val timeoutSeconds: Long = 60) : AiProvider {
     override val name = "Gemini"
     private var apiKey: String = ""
-    private val client = OkHttpClient()
+    private val client = OkHttpClient.Builder().callTimeout(timeoutSeconds, TimeUnit.SECONDS).build()
     override fun setApiKey(key: String) { apiKey = key }
     override suspend fun sendRequest(prompt: String): String {
         val useModel = apiKeyManager?.getDefaultModelForProvider(name) ?: "gemini-2.5-pro"
@@ -101,10 +102,10 @@ class GeminiProvider(override var apiKeyManager: ApiKeyManager? = null) : AiProv
     }
 }
 
-class HuggingFaceProvider(override var apiKeyManager: ApiKeyManager? = null) : AiProvider {
+class HuggingFaceProvider(override var apiKeyManager: ApiKeyManager? = null, private val timeoutSeconds: Long = 60) : AiProvider {
     override val name = "HuggingFace"
     private var apiKey: String = ""
-    private val client = OkHttpClient()
+    private val client = OkHttpClient.Builder().callTimeout(timeoutSeconds, TimeUnit.SECONDS).build()
     override fun setApiKey(key: String) { apiKey = key }
     override suspend fun sendRequest(prompt: String): String {
         val useModel = apiKeyManager?.getDefaultModelForProvider(name) ?: "deepseek-ai/DeepSeek-R1-0528"
@@ -158,10 +159,10 @@ class HuggingFaceProvider(override var apiKeyManager: ApiKeyManager? = null) : A
     }
 }
 
-class OpenRouterProvider(override var apiKeyManager: ApiKeyManager? = null) : AiProvider {
+class OpenRouterProvider(override var apiKeyManager: ApiKeyManager? = null, private val timeoutSeconds: Long = 60) : AiProvider {
     override val name = "OpenRouter"
     private var apiKey: String = ""
-    private val client = OkHttpClient()
+    private val client = OkHttpClient.Builder().callTimeout(timeoutSeconds, TimeUnit.SECONDS).build()
     override fun setApiKey(key: String) { apiKey = key }
     override suspend fun sendRequest(prompt: String): String {
         val useModel = apiKeyManager?.getDefaultModelForProvider(name) ?: "openrouter-model"
@@ -214,10 +215,10 @@ class OpenRouterProvider(override var apiKeyManager: ApiKeyManager? = null) : Ai
     }
 }
 
-class GroqProvider(override var apiKeyManager: ApiKeyManager? = null) : AiProvider {
+class GroqProvider(override var apiKeyManager: ApiKeyManager? = null, private val timeoutSeconds: Long = 60) : AiProvider {
     override val name = "Groq"
     private var apiKey: String = ""
-    private val client = OkHttpClient()
+    private val client = OkHttpClient.Builder().callTimeout(timeoutSeconds, TimeUnit.SECONDS).build()
     override fun setApiKey(key: String) { apiKey = key }
     override suspend fun sendRequest(prompt: String): String {
         val useModel = apiKeyManager?.getDefaultModelForProvider(name) ?: "llama2-70b-4096"
@@ -270,10 +271,10 @@ class GroqProvider(override var apiKeyManager: ApiKeyManager? = null) : AiProvid
     }
 }
 
-class ArliAIProvider(override var apiKeyManager: ApiKeyManager? = null) : AiProvider {
+class ArliAIProvider(override var apiKeyManager: ApiKeyManager? = null, private val timeoutSeconds: Long = 60) : AiProvider {
     override val name = "ArliAI"
     private var apiKey: String = ""
-    private val client = OkHttpClient()
+    private val client = OkHttpClient.Builder().callTimeout(timeoutSeconds, TimeUnit.SECONDS).build()
     override fun setApiKey(key: String) { apiKey = key }
     override suspend fun sendRequest(prompt: String): String {
         val useModel = apiKeyManager?.getDefaultModelForProvider(name) ?: "arliai-model"
@@ -326,10 +327,10 @@ class ArliAIProvider(override var apiKeyManager: ApiKeyManager? = null) : AiProv
     }
 }
 
-class ShaleProtocolProvider(override var apiKeyManager: ApiKeyManager? = null) : AiProvider {
+class ShaleProtocolProvider(override var apiKeyManager: ApiKeyManager? = null, private val timeoutSeconds: Long = 60) : AiProvider {
     override val name = "ShaleProtocol"
     private var apiKey: String = ""
-    private val client = OkHttpClient()
+    private val client = OkHttpClient.Builder().callTimeout(timeoutSeconds, TimeUnit.SECONDS).build()
     override fun setApiKey(key: String) { apiKey = key }
     override suspend fun sendRequest(prompt: String): String {
         val useModel = apiKeyManager?.getDefaultModelForProvider(name) ?: "shale-model"
