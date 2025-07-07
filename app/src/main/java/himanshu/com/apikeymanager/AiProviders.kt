@@ -69,7 +69,6 @@ class GeminiProvider(override var apiKeyManager: ApiKeyManager? = null, private 
         var attempt = 0
         val maxRetries = 2
         val time = measureTimeMillis {
-            while (attempt <= maxRetries) {
                 try {
                     Log.d("GeminiProvider", "Sending request to $url with model=$useModel (attempt $attempt)")
                     val response = client.newCall(request).execute()
@@ -95,7 +94,6 @@ class GeminiProvider(override var apiKeyManager: ApiKeyManager? = null, private 
                     lastException = e
                     attempt++
                 }
-            }
         }
         Log.d("GeminiProvider", "Total time: ${time}ms, attempts: $attempt, lastCode: $lastCode, lastBody: $lastBody")
         throw lastException ?: Exception("GeminiProvider: Unknown error")

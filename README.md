@@ -10,6 +10,7 @@ A robust, pluggable library for managing API keys and making requests to multipl
 - 🔁 **Retries & Failover**: Retries on network/HTTP errors, automatic failover to next key/provider.
 - 📊 **Metrics & Logging**: Logs timing, attempts, errors, and responses.
 - 🛡️ **Robust JSON Parsing**: Uses Moshi for safe, reliable response parsing.
+- ⏱️ **Global Timeout**: Set a global API call timeout (default 60 seconds, user-configurable).
 
 ## YAML Configuration Example
 Create `key_storage.yaml` in your app's internal storage (or let the library create a template):
@@ -46,13 +47,19 @@ dependencies {
 ```kotlin
 import himanshu.com.apikeymanager.AiManager
 
+// Default timeout (60 seconds):
 val aiManager = AiManager(context)
+
+// Custom timeout (e.g., 30 seconds):
+val aiManager = AiManager(context, timeoutSeconds = 30)
+
 // In a coroutine scope:
 val result = aiManager.postRequest("Tell me a joke!", model = "optional-model")
 println(result)
 ```
 - The library will automatically try all keys and providers in round-robin order until one succeeds.
 - You can specify a model per request, or set a default model per provider in code.
+- You can set the global API call timeout (in seconds) when creating `AiManager`. All providers will use this timeout for their network calls.
 
 ## How It Works
 - **Key/Provider Rotation**: Each request uses the next (provider, key) pair. If a request fails (after retries), the next pair is tried.
@@ -90,24 +97,6 @@ A simple test app is included. To run it:
 2. On first launch, the app will create a `key_storage.yaml` file in your app's internal storage directory.
 3. Use Android Studio's Device File Explorer to navigate to `/data/data/himanshu.com.apikeymanager/files/key_storage.yaml` and add your API keys under `api_keys:` as shown above.
 4. Relaunch the app to see the API key displayed. Tap the button to cycle through keys.
-
-## Publishing
-
-### JitPack (Recommended for GitHub Projects)
-1. Push your project to a public GitHub repository.
-2. Go to [jitpack.io](https://jitpack.io/), search for your repo, and follow the instructions.
-3. Add the JitPack repository and dependency to your app's `build.gradle`:
-   ```gradle
-   repositories {
-       maven { url 'https://jitpack.io' }
-   }
-   dependencies {
-       implementation 'com.github.yourusername:yourrepo:Tag'
-   }
-   ```
-
-### Maven Central
-- Follow [Maven Central's publishing guide](https://central.sonatype.org/publish/publish-guide/).
 
 ## Response Format
 
