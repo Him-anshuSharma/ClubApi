@@ -23,7 +23,7 @@ private data class GeminiContent(val parts: List<GeminiPart>?)
 private data class GeminiPart(val text: String?)
 private data class GeminiResponse(val candidates: List<GeminiCandidate>?)
 
-// OpenRouter, Groq, ArliAI, ShaleProtocol response data class
+// HuggingFace, OpenRouter, Groq, ArliAI, ShaleProtocol response data class
 private data class ChatChoice(val message: ChatMessage?)
 private data class ChatMessage(val content: String?)
 private data class ChatResponse(val choices: List<ChatChoice>?)
@@ -106,7 +106,7 @@ class HuggingFaceProvider(override var apiKeyManager: ApiKeyManager? = null, pri
         Log.d("${name}Provider", "Using model: $useModel")
         val url = "https://router.huggingface.co/featherless-ai/v1/chat/completions"
         val requestObj = OpenAIChatRequest(useModel, listOf(OpenAIMessage("user", prompt)))
-        val jsonBody = moshi.adapter(HuggingFaceResponse::class.java).toJson(requestObj)
+        val jsonBody = moshi.adapter(OpenAIChatRequest::class.java).toJson(requestObj)
         val request = Request.Builder()
             .url(url)
             .addHeader("Authorization", "Bearer $apiKey")
