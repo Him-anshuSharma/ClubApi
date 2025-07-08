@@ -23,9 +23,6 @@ private data class GeminiContent(val parts: List<GeminiPart>?)
 private data class GeminiPart(val text: String?)
 private data class GeminiResponse(val candidates: List<GeminiCandidate>?)
 
-// HuggingFace response data class
-private data class HuggingFaceResponse(val generated_text: String?)
-
 // OpenRouter, Groq, ArliAI, ShaleProtocol response data class
 private data class ChatChoice(val message: ChatMessage?)
 private data class ChatMessage(val content: String?)
@@ -66,11 +63,10 @@ class GeminiProvider(override var apiKeyManager: ApiKeyManager? = null, private 
         var lastException: Exception? = null
         var lastBody: String? = null
         var lastCode: Int? = null
-        var attempt = 0
-        val maxRetries = 2
+
         val time = measureTimeMillis {
                 try {
-                    Log.d("GeminiProvider", "Sending request to $url with model=$useModel (attempt $attempt)")
+                    Log.d("GeminiProvider", "Sending request to $url with model=$useModel")
                     val response = client.newCall(request).execute()
                     val body = response.body?.string()
                     lastBody = body
@@ -90,12 +86,12 @@ class GeminiProvider(override var apiKeyManager: ApiKeyManager? = null, private 
                     Log.d("GeminiProvider", "Parsed text: $text")
                     return text
                 } catch (e: Exception) {
-                    Log.e("GeminiProvider", "Request failed (attempt $attempt): ${e.message}", e)
+                    Log.e("GeminiProvider", "Request failed : ${e.message}", e)
                     lastException = e
-                    attempt++
+
                 }
         }
-        Log.d("GeminiProvider", "Total time: ${time}ms, attempts: $attempt, lastCode: $lastCode, lastBody: $lastBody")
+        Log.d("GeminiProvider", "Total time: ${time}ms, lastCode: $lastCode, lastBody: $lastBody")
         throw lastException ?: Exception("GeminiProvider: Unknown error")
     }
 }
@@ -110,7 +106,7 @@ class HuggingFaceProvider(override var apiKeyManager: ApiKeyManager? = null, pri
         Log.d("${name}Provider", "Using model: $useModel")
         val url = "https://router.huggingface.co/featherless-ai/v1/chat/completions"
         val requestObj = OpenAIChatRequest(useModel, listOf(OpenAIMessage("user", prompt)))
-        val jsonBody = moshi.adapter(OpenAIChatRequest::class.java).toJson(requestObj)
+        val jsonBody = moshi.adapter(HuggingFaceResponse::class.java).toJson(requestObj)
         val request = Request.Builder()
             .url(url)
             .addHeader("Authorization", "Bearer $apiKey")
@@ -120,12 +116,11 @@ class HuggingFaceProvider(override var apiKeyManager: ApiKeyManager? = null, pri
         var lastException: Exception? = null
         var lastBody: String? = null
         var lastCode: Int? = null
-        var attempt = 0
-        val maxRetries = 2
+
         val time = measureTimeMillis {
-            while (attempt <= maxRetries) {
+            
                 try {
-                    Log.d("HuggingFaceProvider", "Sending request to $url with model=$useModel (attempt $attempt)")
+                    Log.d("HuggingFaceProvider", "Sending request to $url with model=$useModel ")
                     val response = client.newCall(request).execute()
                     val body = response.body?.string()
                     lastBody = body
@@ -146,13 +141,13 @@ class HuggingFaceProvider(override var apiKeyManager: ApiKeyManager? = null, pri
                     Log.d("HuggingFaceProvider", "Parsed text: $text")
                     return text
                 } catch (e: Exception) {
-                    Log.e("HuggingFaceProvider", "Request failed (attempt $attempt): ${e.message}", e)
+                    Log.e("HuggingFaceProvider", "Request failed : ${e.message}", e)
                     lastException = e
-                    attempt++
+
                 }
-            }
+            
         }
-        Log.d("HuggingFaceProvider", "Total time: ${time}ms, attempts: $attempt, lastCode: $lastCode, lastBody: $lastBody")
+        Log.d("HuggingFaceProvider", "Total time: ${time}ms, lastCode: $lastCode, lastBody: $lastBody")
         throw lastException ?: Exception("HuggingFaceProvider: Unknown error")
     }
 }
@@ -177,12 +172,11 @@ class OpenRouterProvider(override var apiKeyManager: ApiKeyManager? = null, priv
         var lastException: Exception? = null
         var lastBody: String? = null
         var lastCode: Int? = null
-        var attempt = 0
-        val maxRetries = 2
+
         val time = measureTimeMillis {
-            while (attempt <= maxRetries) {
+            
                 try {
-                    Log.d("OpenRouterProvider", "Sending request to $url with model=$useModel (attempt $attempt)")
+                    Log.d("OpenRouterProvider", "Sending request to $url with model=$useModel ")
                     val response = client.newCall(request).execute()
                     val body = response.body?.string()
                     lastBody = body
@@ -202,13 +196,13 @@ class OpenRouterProvider(override var apiKeyManager: ApiKeyManager? = null, priv
                     Log.d("OpenRouterProvider", "Parsed text: $text")
                     return text
                 } catch (e: Exception) {
-                    Log.e("OpenRouterProvider", "Request failed (attempt $attempt): ${e.message}", e)
+                    Log.e("OpenRouterProvider", "Request failed : ${e.message}", e)
                     lastException = e
-                    attempt++
+
                 }
-            }
+            
         }
-        Log.d("OpenRouterProvider", "Total time: ${time}ms, attempts: $attempt, lastCode: $lastCode, lastBody: $lastBody")
+        Log.d("OpenRouterProvider", "Total time: ${time}ms, lastCode: $lastCode, lastBody: $lastBody")
         throw lastException ?: Exception("OpenRouterProvider: Unknown error")
     }
 }
@@ -233,12 +227,11 @@ class GroqProvider(override var apiKeyManager: ApiKeyManager? = null, private va
         var lastException: Exception? = null
         var lastBody: String? = null
         var lastCode: Int? = null
-        var attempt = 0
-        val maxRetries = 2
+
         val time = measureTimeMillis {
-            while (attempt <= maxRetries) {
+            
                 try {
-                    Log.d("GroqProvider", "Sending request to $url with model=$useModel (attempt $attempt)")
+                    Log.d("GroqProvider", "Sending request to $url with model=$useModel ")
                     val response = client.newCall(request).execute()
                     val body = response.body?.string()
                     lastBody = body
@@ -258,13 +251,13 @@ class GroqProvider(override var apiKeyManager: ApiKeyManager? = null, private va
                     Log.d("GroqProvider", "Parsed text: $text")
                     return text
                 } catch (e: Exception) {
-                    Log.e("GroqProvider", "Request failed (attempt $attempt): ${e.message}", e)
+                    Log.e("GroqProvider", "Request failed : ${e.message}", e)
                     lastException = e
-                    attempt++
+
                 }
-            }
+            
         }
-        Log.d("GroqProvider", "Total time: ${time}ms, attempts: $attempt, lastCode: $lastCode, lastBody: $lastBody")
+        Log.d("GroqProvider", "Total time: ${time}ms, lastCode: $lastCode, lastBody: $lastBody")
         throw lastException ?: Exception("GroqProvider: Unknown error")
     }
 }
@@ -289,12 +282,11 @@ class ArliAIProvider(override var apiKeyManager: ApiKeyManager? = null, private 
         var lastException: Exception? = null
         var lastBody: String? = null
         var lastCode: Int? = null
-        var attempt = 0
-        val maxRetries = 2
+
         val time = measureTimeMillis {
-            while (attempt <= maxRetries) {
+            
                 try {
-                    Log.d("ArliAIProvider", "Sending request to $url with model=$useModel (attempt $attempt)")
+                    Log.d("ArliAIProvider", "Sending request to $url with model=$useModel ")
                     val response = client.newCall(request).execute()
                     val body = response.body?.string()
                     lastBody = body
@@ -314,13 +306,13 @@ class ArliAIProvider(override var apiKeyManager: ApiKeyManager? = null, private 
                     Log.d("ArliAIProvider", "Parsed text: $text")
                     return text
                 } catch (e: Exception) {
-                    Log.e("ArliAIProvider", "Request failed (attempt $attempt): ${e.message}", e)
+                    Log.e("ArliAIProvider", "Request failed : ${e.message}", e)
                     lastException = e
-                    attempt++
+
                 }
-            }
+            
         }
-        Log.d("ArliAIProvider", "Total time: ${time}ms, attempts: $attempt, lastCode: $lastCode, lastBody: $lastBody")
+        Log.d("ArliAIProvider", "Total time: ${time}ms, lastCode: $lastCode, lastBody: $lastBody")
         throw lastException ?: Exception("ArliAIProvider: Unknown error")
     }
 }
@@ -345,12 +337,11 @@ class ShaleProtocolProvider(override var apiKeyManager: ApiKeyManager? = null, p
         var lastException: Exception? = null
         var lastBody: String? = null
         var lastCode: Int? = null
-        var attempt = 0
-        val maxRetries = 2
+
         val time = measureTimeMillis {
-            while (attempt <= maxRetries) {
+            
                 try {
-                    Log.d("ShaleProtocolProvider", "Sending request to $url with model=$useModel (attempt $attempt)")
+                    Log.d("ShaleProtocolProvider", "Sending request to $url with model=$useModel ")
                     val response = client.newCall(request).execute()
                     val body = response.body?.string()
                     lastBody = body
@@ -370,13 +361,13 @@ class ShaleProtocolProvider(override var apiKeyManager: ApiKeyManager? = null, p
                     Log.d("ShaleProtocolProvider", "Parsed text: $text")
                     return text
                 } catch (e: Exception) {
-                    Log.e("ShaleProtocolProvider", "Request failed (attempt $attempt): ${e.message}", e)
+                    Log.e("ShaleProtocolProvider", "Request failed : ${e.message}", e)
                     lastException = e
-                    attempt++
+
                 }
-            }
+            
         }
-        Log.d("ShaleProtocolProvider", "Total time: ${time}ms, attempts: $attempt, lastCode: $lastCode, lastBody: $lastBody")
+        Log.d("ShaleProtocolProvider", "Total time: ${time}ms, lastCode: $lastCode, lastBody: $lastBody")
         throw lastException ?: Exception("ShaleProtocolProvider: Unknown error")
     }
 } 
