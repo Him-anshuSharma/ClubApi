@@ -9,13 +9,11 @@ import java.io.FileNotFoundException
 import java.io.InputStream
 import java.lang.reflect.Type
 
-@JsonClass(generateAdapter = true)
 data class ProviderConfig(
     val keys: List<String> = listOf(),
     val default_model: String? = null
 )
 
-@JsonClass(generateAdapter = true)
 data class KeyStorage(
     val api_keys: Map<String, ProviderConfig> = mapOf()
 )

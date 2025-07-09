@@ -13,7 +13,7 @@ This library manages API keys and model selection for multiple AI providers in y
    implementation("com.github.Him-anshuSharma:apikeymanager:3.0.2")
    implementation("com.squareup.moshi:moshi:1.15.0")
    implementation("com.squareup.moshi:moshi-kotlin:1.15.0")
-   kapt("com.squareup.moshi:moshi-kotlin-codegen:1.15.0")
+   // No codegen or annotation processor needed!
    ```
 
 2. **Add your API keys**
@@ -54,6 +54,6 @@ This library manages API keys and model selection for multiple AI providers in y
    - Delete any `key_storage.yaml` or similar files from your project.
 
 ## Notes
-- All serialization is handled by Moshi.
+- All serialization is handled by Moshi **reflection** (no codegen, no annotation processor required).
 - Only `key_storage.json` is supported for key storage.
 - Make sure to keep your API keys secure and out of version control. 
