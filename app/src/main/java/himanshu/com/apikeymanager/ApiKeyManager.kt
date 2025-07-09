@@ -5,6 +5,7 @@ import android.util.Log
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.Types
+import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import java.io.FileNotFoundException
 import java.io.InputStream
 import java.lang.reflect.Type
@@ -27,18 +28,30 @@ class ApiKeyManager(private val context: Context) {
         loadKeys()
     }
 
+    private fun logInfo(tag: String, message: String) {
+        android.util.Log.i(tag, message)
+    }
+
+    private fun logError(tag: String, message: String, throwable: Throwable? = null) {
+        android.util.Log.e(tag, message, throwable)
+    }
+
+    private fun logDebug(tag: String, message: String) {
+        android.util.Log.d(tag, message)
+    }
+
     private fun loadKeys() {
         try {
             val inputStream: InputStream = context.assets.open(fileName)
             val json = inputStream.bufferedReader().use { it.readText() }
-            val moshi = Moshi.Builder().build()
+            val moshi = Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
             val adapter = moshi.adapter(KeyStorage::class.java)
             keyStorage = adapter.fromJson(json) ?: KeyStorage()
         } catch (e: FileNotFoundException) {
-            Log.d("CLUBAPI", "key_storage.json not found, using empty key storage.")
+            logInfo("CLUBAPI", "key_storage.json not found, using empty key storage.")
             keyStorage = KeyStorage()
         } catch (e: Exception) {
-            Log.d("CLUBAPI", "Failed to load key_storage.json: ${e.message}")
+            logError("CLUBAPI", "Failed to load key_storage.json: ${e.message}", e)
             keyStorage = KeyStorage()
         }
     }
