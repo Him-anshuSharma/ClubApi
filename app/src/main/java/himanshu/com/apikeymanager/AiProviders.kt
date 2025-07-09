@@ -17,17 +17,7 @@ interface AiProvider {
     suspend fun sendRequest(prompt: String): String
 }
 
-// Gemini response data class
-private data class GeminiCandidate(val content: GeminiContent?)
-private data class GeminiContent(val parts: List<GeminiPart>?)
-private data class GeminiPart(val text: String?)
-private data class GeminiResponse(val candidates: List<GeminiCandidate>?)
-
-// HuggingFace, OpenRouter, Groq, ArliAI, ShaleProtocol response data class
-private data class ChatChoice(val message: ChatMessage?)
-private data class ChatMessage(val content: String?)
-private data class ChatResponse(val choices: List<ChatChoice>?)
-
+// Data classes for requests and responses
 @JsonClass(generateAdapter = true)
 data class OpenAIMessage(val role: String, val content: String)
 @JsonClass(generateAdapter = true)
@@ -38,6 +28,15 @@ data class GeminiPartRequest(val text: String)
 data class GeminiContentRequest(val parts: List<GeminiPartRequest>)
 @JsonClass(generateAdapter = true)
 data class GeminiRequest(val contents: List<GeminiContentRequest>)
+
+// Response models
+private data class GeminiCandidate(val content: GeminiContent?)
+private data class GeminiContent(val parts: List<GeminiPart>?)
+private data class GeminiPart(val text: String?)
+private data class GeminiResponse(val candidates: List<GeminiCandidate>?)
+private data class ChatChoice(val message: ChatMessage?)
+private data class ChatMessage(val content: String?)
+private data class ChatResponse(val choices: List<ChatChoice>?)
 
 private val moshi: Moshi = Moshi.Builder()
     .add(KotlinJsonAdapterFactory())
@@ -53,7 +52,6 @@ class GeminiProvider(
     override fun setApiKey(key: String) { apiKey = key }
     override suspend fun sendRequest(prompt: String): String {
         val useModel = apiKeyManager?.getDefaultModelForProvider(name) ?: "gemini-2.5-pro"
-        Log.d("${name}Provider", "Using model: $useModel")
         val url = "https://generativelanguage.googleapis.com/v1beta/models/$useModel:generateContent"
         val requestObj = GeminiRequest(listOf(GeminiContentRequest(listOf(GeminiPartRequest(prompt)))))
         val jsonBody = moshi.adapter(GeminiRequest::class.java).toJson(requestObj)
@@ -63,39 +61,13 @@ class GeminiProvider(
             .addHeader("Content-Type", "application/json")
             .post(jsonBody.toRequestBody("application/json".toMediaType()))
             .build()
-        var lastException: Exception? = null
-        var lastBody: String? = null
-        var lastCode: Int? = null
-
-        val time = measureTimeMillis {
-                try {
-                    Log.d("GeminiProvider", "Sending request to $url with model=$useModel")
-                    val response = client.newCall(request).execute()
-                    val body = response.body?.string()
-                    lastBody = body
-                    lastCode = response.code
-                    if (!response.isSuccessful) {
-                        Log.e("GeminiProvider", "HTTP error: ${response.code} - $body")
-                        throw Exception("Gemini API HTTP error: ${response.code} - $body")
-                    }
-                    Log.d("GeminiProvider", "Response: $body")
-                    val adapter = moshi.adapter(GeminiResponse::class.java)
-                    val parsed = adapter.fromJson(body ?: "")
-                    val text = parsed?.candidates?.firstOrNull()?.content?.parts?.firstOrNull()?.text
-                    if (text == null) {
-                        Log.e("GeminiProvider", "Failed to parse Gemini response: $body")
-                        throw Exception("Failed to parse Gemini response: $body")
-                    }
-                    Log.d("GeminiProvider", "Parsed text: $text")
-                    return text
-                } catch (e: Exception) {
-                    Log.e("GeminiProvider", "Request failed : ${e.message}", e)
-                    lastException = e
-
-                }
-        }
-        Log.d("GeminiProvider", "Total time: ${time}ms, lastCode: $lastCode, lastBody: $lastBody")
-        throw lastException ?: Exception("GeminiProvider: Unknown error")
+        val response = client.newCall(request).execute()
+        val body = response.body?.string()
+        if (!response.isSuccessful) throw Exception("Gemini API HTTP error: ${response.code} - $body")
+        val adapter = moshi.adapter(GeminiResponse::class.java)
+        val parsed = adapter.fromJson(body ?: "")
+        val text = parsed?.candidates?.firstOrNull()?.content?.parts?.firstOrNull()?.text
+        return text ?: throw Exception("Failed to parse Gemini response: $body")
     }
 }
 
@@ -109,7 +81,6 @@ class HuggingFaceProvider(
     override fun setApiKey(key: String) { apiKey = key }
     override suspend fun sendRequest(prompt: String): String {
         val useModel = apiKeyManager?.getDefaultModelForProvider(name) ?: "Qwen/Qwen2-7B-Instruct"
-        Log.d("${name}Provider", "Using model: $useModel")
         val url = "https://router.huggingface.co/featherless-ai/v1/chat/completions"
         val requestObj = OpenAIChatRequest(useModel, listOf(OpenAIMessage("user", prompt)))
         val jsonBody = moshi.adapter(OpenAIChatRequest::class.java).toJson(requestObj)
@@ -119,42 +90,13 @@ class HuggingFaceProvider(
             .addHeader("Content-Type", "application/json")
             .post(jsonBody.toRequestBody("application/json".toMediaType()))
             .build()
-        var lastException: Exception? = null
-        var lastBody: String? = null
-        var lastCode: Int? = null
-
-        val time = measureTimeMillis {
-            
-                try {
-                    Log.d("HuggingFaceProvider", "Sending request to $url with model=$useModel ")
-                    val response = client.newCall(request).execute()
-                    val body = response.body?.string()
-                    lastBody = body
-                    lastCode = response.code
-                    if (!response.isSuccessful) {
-                        Log.e("HuggingFaceProvider", "HTTP error: ${response.code} - $body")
-                        throw Exception("HuggingFace API HTTP error: ${response.code} - $body")
-                    }
-                    Log.d("HuggingFaceProvider", "Response: $body")
-                    // Parse OpenAI-style chat completion response
-                    val adapter = moshi.adapter(ChatResponse::class.java)
-                    val parsed = adapter.fromJson(body ?: "")
-                    val text = parsed?.choices?.firstOrNull()?.message?.content
-                    if (text == null) {
-                        Log.e("HuggingFaceProvider", "Failed to parse HuggingFace response: $body")
-                        throw Exception("Failed to parse HuggingFace response: $body")
-                    }
-                    Log.d("HuggingFaceProvider", "Parsed text: $text")
-                    return text
-                } catch (e: Exception) {
-                    Log.e("HuggingFaceProvider", "Request failed : ${e.message}", e)
-                    lastException = e
-
-                }
-            
-        }
-        Log.d("HuggingFaceProvider", "Total time: ${time}ms, lastCode: $lastCode, lastBody: $lastBody")
-        throw lastException ?: Exception("HuggingFaceProvider: Unknown error")
+        val response = client.newCall(request).execute()
+        val body = response.body?.string()
+        if (!response.isSuccessful) throw Exception("HuggingFace API HTTP error: ${response.code} - $body")
+        val adapter = moshi.adapter(ChatResponse::class.java)
+        val parsed = adapter.fromJson(body ?: "")
+        val text = parsed?.choices?.firstOrNull()?.message?.content
+        return text ?: throw Exception("Failed to parse HuggingFace response: $body")
     }
 }
 
@@ -168,7 +110,6 @@ class OpenRouterProvider(
     override fun setApiKey(key: String) { apiKey = key }
     override suspend fun sendRequest(prompt: String): String {
         val useModel = apiKeyManager?.getDefaultModelForProvider(name) ?: "openrouter-model"
-        Log.d("${name}Provider", "Using model: $useModel")
         val url = "https://openrouter.ai/api/v1/chat/completions"
         val requestObj = OpenAIChatRequest(useModel, listOf(OpenAIMessage("user", prompt)))
         val jsonBody = moshi.adapter(OpenAIChatRequest::class.java).toJson(requestObj)
@@ -178,41 +119,13 @@ class OpenRouterProvider(
             .addHeader("Content-Type", "application/json")
             .post(jsonBody.toRequestBody("application/json".toMediaType()))
             .build()
-        var lastException: Exception? = null
-        var lastBody: String? = null
-        var lastCode: Int? = null
-
-        val time = measureTimeMillis {
-            
-                try {
-                    Log.d("OpenRouterProvider", "Sending request to $url with model=$useModel ")
-                    val response = client.newCall(request).execute()
-                    val body = response.body?.string()
-                    lastBody = body
-                    lastCode = response.code
-                    if (!response.isSuccessful) {
-                        Log.e("OpenRouterProvider", "HTTP error: ${response.code} - $body")
-                        throw Exception("OpenRouter API HTTP error: ${response.code} - $body")
-                    }
-                    Log.d("OpenRouterProvider", "Response: $body")
-                    val adapter = moshi.adapter(ChatResponse::class.java)
-                    val parsed = adapter.fromJson(body ?: "")
-                    val text = parsed?.choices?.firstOrNull()?.message?.content
-                    if (text == null) {
-                        Log.e("OpenRouterProvider", "Failed to parse OpenRouter response: $body")
-                        throw Exception("Failed to parse OpenRouter response: $body")
-                    }
-                    Log.d("OpenRouterProvider", "Parsed text: $text")
-                    return text
-                } catch (e: Exception) {
-                    Log.e("OpenRouterProvider", "Request failed : ${e.message}", e)
-                    lastException = e
-
-                }
-            
-        }
-        Log.d("OpenRouterProvider", "Total time: ${time}ms, lastCode: $lastCode, lastBody: $lastBody")
-        throw lastException ?: Exception("OpenRouterProvider: Unknown error")
+        val response = client.newCall(request).execute()
+        val body = response.body?.string()
+        if (!response.isSuccessful) throw Exception("OpenRouter API HTTP error: ${response.code} - $body")
+        val adapter = moshi.adapter(ChatResponse::class.java)
+        val parsed = adapter.fromJson(body ?: "")
+        val text = parsed?.choices?.firstOrNull()?.message?.content
+        return text ?: throw Exception("Failed to parse OpenRouter response: $body")
     }
 }
 
@@ -226,7 +139,6 @@ class GroqProvider(
     override fun setApiKey(key: String) { apiKey = key }
     override suspend fun sendRequest(prompt: String): String {
         val useModel = apiKeyManager?.getDefaultModelForProvider(name) ?: "llama2-70b-4096"
-        Log.d("${name}Provider", "Using model: $useModel")
         val url = "https://api.groq.com/openai/v1/chat/completions"
         val requestObj = OpenAIChatRequest(useModel, listOf(OpenAIMessage("user", prompt)))
         val jsonBody = moshi.adapter(OpenAIChatRequest::class.java).toJson(requestObj)
@@ -236,41 +148,13 @@ class GroqProvider(
             .addHeader("Content-Type", "application/json")
             .post(jsonBody.toRequestBody("application/json".toMediaType()))
             .build()
-        var lastException: Exception? = null
-        var lastBody: String? = null
-        var lastCode: Int? = null
-
-        val time = measureTimeMillis {
-            
-                try {
-                    Log.d("GroqProvider", "Sending request to $url with model=$useModel ")
-                    val response = client.newCall(request).execute()
-                    val body = response.body?.string()
-                    lastBody = body
-                    lastCode = response.code
-                    if (!response.isSuccessful) {
-                        Log.e("GroqProvider", "HTTP error: ${response.code} - $body")
-                        throw Exception("Groq API HTTP error: ${response.code} - $body")
-                    }
-                    Log.d("GroqProvider", "Response: $body")
-                    val adapter = moshi.adapter(ChatResponse::class.java)
-                    val parsed = adapter.fromJson(body ?: "")
-                    val text = parsed?.choices?.firstOrNull()?.message?.content
-                    if (text == null) {
-                        Log.e("GroqProvider", "Failed to parse Groq response: $body")
-                        throw Exception("Failed to parse Groq response: $body")
-                    }
-                    Log.d("GroqProvider", "Parsed text: $text")
-                    return text
-                } catch (e: Exception) {
-                    Log.e("GroqProvider", "Request failed : ${e.message}", e)
-                    lastException = e
-
-                }
-            
-        }
-        Log.d("GroqProvider", "Total time: ${time}ms, lastCode: $lastCode, lastBody: $lastBody")
-        throw lastException ?: Exception("GroqProvider: Unknown error")
+        val response = client.newCall(request).execute()
+        val body = response.body?.string()
+        if (!response.isSuccessful) throw Exception("Groq API HTTP error: ${response.code} - $body")
+        val adapter = moshi.adapter(ChatResponse::class.java)
+        val parsed = adapter.fromJson(body ?: "")
+        val text = parsed?.choices?.firstOrNull()?.message?.content
+        return text ?: throw Exception("Failed to parse Groq response: $body")
     }
 }
 
@@ -284,7 +168,6 @@ class ArliAIProvider(
     override fun setApiKey(key: String) { apiKey = key }
     override suspend fun sendRequest(prompt: String): String {
         val useModel = apiKeyManager?.getDefaultModelForProvider(name) ?: "arliai-model"
-        Log.d("${name}Provider", "Using model: $useModel")
         val url = "https://api.arliai.com/v1/chat/completions"
         val requestObj = OpenAIChatRequest(useModel, listOf(OpenAIMessage("user", prompt)))
         val jsonBody = moshi.adapter(OpenAIChatRequest::class.java).toJson(requestObj)
@@ -294,41 +177,13 @@ class ArliAIProvider(
             .addHeader("Content-Type", "application/json")
             .post(jsonBody.toRequestBody("application/json".toMediaType()))
             .build()
-        var lastException: Exception? = null
-        var lastBody: String? = null
-        var lastCode: Int? = null
-
-        val time = measureTimeMillis {
-            
-                try {
-                    Log.d("ArliAIProvider", "Sending request to $url with model=$useModel ")
-                    val response = client.newCall(request).execute()
-                    val body = response.body?.string()
-                    lastBody = body
-                    lastCode = response.code
-                    if (!response.isSuccessful) {
-                        Log.e("ArliAIProvider", "HTTP error: ${response.code} - $body")
-                        throw Exception("ArliAI API HTTP error: ${response.code} - $body")
-                    }
-                    Log.d("ArliAIProvider", "Response: $body")
-                    val adapter = moshi.adapter(ChatResponse::class.java)
-                    val parsed = adapter.fromJson(body ?: "")
-                    val text = parsed?.choices?.firstOrNull()?.message?.content
-                    if (text == null) {
-                        Log.e("ArliAIProvider", "Failed to parse ArliAI response: $body")
-                        throw Exception("Failed to parse ArliAI response: $body")
-                    }
-                    Log.d("ArliAIProvider", "Parsed text: $text")
-                    return text
-                } catch (e: Exception) {
-                    Log.e("ArliAIProvider", "Request failed : ${e.message}", e)
-                    lastException = e
-
-                }
-            
-        }
-        Log.d("ArliAIProvider", "Total time: ${time}ms, lastCode: $lastCode, lastBody: $lastBody")
-        throw lastException ?: Exception("ArliAIProvider: Unknown error")
+        val response = client.newCall(request).execute()
+        val body = response.body?.string()
+        if (!response.isSuccessful) throw Exception("ArliAI API HTTP error: ${response.code} - $body")
+        val adapter = moshi.adapter(ChatResponse::class.java)
+        val parsed = adapter.fromJson(body ?: "")
+        val text = parsed?.choices?.firstOrNull()?.message?.content
+        return text ?: throw Exception("Failed to parse ArliAI response: $body")
     }
 }
 
@@ -342,7 +197,6 @@ class ShaleProtocolProvider(
     override fun setApiKey(key: String) { apiKey = key }
     override suspend fun sendRequest(prompt: String): String {
         val useModel = apiKeyManager?.getDefaultModelForProvider(name) ?: "shale-model"
-        Log.d("${name}Provider", "Using model: $useModel")
         val url = "https://shale.live/v1/chat/completions"
         val requestObj = OpenAIChatRequest(useModel, listOf(OpenAIMessage("user", prompt)))
         val jsonBody = moshi.adapter(OpenAIChatRequest::class.java).toJson(requestObj)
@@ -352,40 +206,12 @@ class ShaleProtocolProvider(
             .addHeader("Content-Type", "application/json")
             .post(jsonBody.toRequestBody("application/json".toMediaType()))
             .build()
-        var lastException: Exception? = null
-        var lastBody: String? = null
-        var lastCode: Int? = null
-
-        val time = measureTimeMillis {
-            
-                try {
-                    Log.d("ShaleProtocolProvider", "Sending request to $url with model=$useModel ")
-                    val response = client.newCall(request).execute()
-                    val body = response.body?.string()
-                    lastBody = body
-                    lastCode = response.code
-                    if (!response.isSuccessful) {
-                        Log.e("ShaleProtocolProvider", "HTTP error: ${response.code} - $body")
-                        throw Exception("ShaleProtocol API HTTP error: ${response.code} - $body")
-                    }
-                    Log.d("ShaleProtocolProvider", "Response: $body")
-                    val adapter = moshi.adapter(ChatResponse::class.java)
-                    val parsed = adapter.fromJson(body ?: "")
-                    val text = parsed?.choices?.firstOrNull()?.message?.content
-                    if (text == null) {
-                        Log.e("ShaleProtocolProvider", "Failed to parse ShaleProtocol response: $body")
-                        throw Exception("Failed to parse ShaleProtocol response: $body")
-                    }
-                    Log.d("ShaleProtocolProvider", "Parsed text: $text")
-                    return text
-                } catch (e: Exception) {
-                    Log.e("ShaleProtocolProvider", "Request failed : ${e.message}", e)
-                    lastException = e
-
-                }
-            
-        }
-        Log.d("ShaleProtocolProvider", "Total time: ${time}ms, lastCode: $lastCode, lastBody: $lastBody")
-        throw lastException ?: Exception("ShaleProtocolProvider: Unknown error")
+        val response = client.newCall(request).execute()
+        val body = response.body?.string()
+        if (!response.isSuccessful) throw Exception("ShaleProtocol API HTTP error: ${response.code} - $body")
+        val adapter = moshi.adapter(ChatResponse::class.java)
+        val parsed = adapter.fromJson(body ?: "")
+        val text = parsed?.choices?.firstOrNull()?.message?.content
+        return text ?: throw Exception("Failed to parse ShaleProtocol response: $body")
     }
 } 

@@ -78,3 +78,31 @@ class ApiKeyManager(private val context: Context) {
     }
 }
 
+// Manual test entry point
+fun main() {
+    // Replace with your Android context if running in an Android environment
+    val context: Context? = null // This must be set to a valid Context in a real app
+    if (context == null) {
+        println("No Android context available. Manual test cannot run in pure JVM.")
+        return
+    }
+    val apiKeyManager = ApiKeyManager(context)
+    val providers = listOf(
+        GeminiProvider(apiKeyManager),
+        HuggingFaceProvider(apiKeyManager),
+        OpenRouterProvider(apiKeyManager),
+        GroqProvider(apiKeyManager)
+        // Add ArliAIProvider and ShaleProtocolProvider if needed
+    )
+    val prompt = "Say hello from the test!"
+    providers.forEach { provider ->
+        try {
+            provider.setApiKey(apiKeyManager.getApiKeyForProvider(provider.name) ?: "")
+            val response = kotlinx.coroutines.runBlocking { provider.sendRequest(prompt) }
+            println("${provider.name} response: $response")
+        } catch (e: Exception) {
+            println("${provider.name} failed: ${e.message}")
+        }
+    }
+}
+
