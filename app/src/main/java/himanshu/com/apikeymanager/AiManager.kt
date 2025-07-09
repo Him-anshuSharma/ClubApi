@@ -1,6 +1,7 @@
 package himanshu.com.apikeymanager
 
 import android.content.Context
+import android.util.Log
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -42,12 +43,15 @@ class AiManager(private val context: Context, private val timeoutSeconds: Long =
         while (attempts < totalPairs) {
             val (provider, key) = providerKeyPairs[(requestIndex + attempts) % totalPairs]
             provider.setApiKey(key)
+            Log.d("CLUBAPI", "Calling provider: ${provider.name} with key: $key")
             try {
                 val response = provider.sendRequest(promptWithLang)
+                Log.d("CLUBAPI", "${provider.name} response: $response")
                 // Advance the round-robin index for next call
                 requestIndex = (requestIndex + 1) % totalPairs
                 return response
             } catch (e: Exception) {
+                Log.d("CLUBAPI", "${provider.name} error: ${e.message}")
                 // Optionally log error: e
                 attempts++
                 continue
