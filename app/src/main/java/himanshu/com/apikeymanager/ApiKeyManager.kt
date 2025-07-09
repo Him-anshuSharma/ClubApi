@@ -1,7 +1,8 @@
 package himanshu.com.apikeymanager
 
 import android.content.Context
-import org.yaml.snakeyaml.Yaml
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import android.util.Log
 
 class ApiKeyManager(private val context: Context) {
@@ -15,10 +16,10 @@ class ApiKeyManager(private val context: Context) {
     }
 
     private fun loadKeys() {
-        val yaml = Yaml()
+        val mapper = ObjectMapper(YAMLFactory())
         try {
             context.assets.open(fileName).use { inputStream ->
-                val data = yaml.load(inputStream.reader()) as? Map<*, *>
+                val data = mapper.readValue(inputStream, Map::class.java) as? Map<*, *>
                 val apiKeysSection = data?.get("api_keys") as? Map<*, *>
                 apiKeys = apiKeysSection?.entries
                     ?.mapNotNull { entry ->

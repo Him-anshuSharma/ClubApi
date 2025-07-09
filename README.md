@@ -1,3 +1,5 @@
+Hello! 😊 How can I assist you today?
+
 # AI Key Manager for Android
 
 A robust, pluggable library for managing API keys and making requests to multiple AI providers (Gemini, Hugging Face, OpenRouter, Groq, ArliAI, ShaleProtocol) with automatic key/provider rotation, model selection, retries, and error handling.
@@ -18,18 +20,31 @@ Create `key_storage.yaml` in your app's internal storage (or let the library cre
 ```yaml
 api_keys:
   Gemini:
-    - YOUR_GEMINI_KEY1
-    - YOUR_GEMINI_KEY2
+    keys:
+      - YOUR_GEMINI_KEY1
+      - YOUR_GEMINI_KEY2
+    default_model: gemini-pro
   HuggingFace:
-    - YOUR_HF_KEY1
+    keys:
+      - YOUR_HF_KEY1
+      - YOUR_HF_KEY2
+    default_model: meta-llama/Llama-2-70b-chat-hf
   OpenRouter:
-    - YOUR_OPENROUTER_KEY1
+    keys:
+      - YOUR_OPENROUTER_KEY1
+    default_model: openrouter-model-1
   Groq:
-    - YOUR_GROQ_KEY1
+    keys:
+      - YOUR_GROQ_KEY1
+    default_model: groq-model-1
   ArliAI:
-    - YOUR_ARLIAI_KEY1
+    keys:
+      - YOUR_ARLIAI_KEY1
+    default_model: arliai-model-1
   ShaleProtocol:
-    - YOUR_SHALE_KEY1
+    keys:
+      - YOUR_SHALE_KEY1
+    default_model: shale-model-1
 ```
 
 ## Installation
@@ -54,12 +69,12 @@ val aiManager = AiManager(context)
 val aiManager = AiManager(context, timeoutSeconds = 30)
 
 // In a coroutine scope:
-val result = aiManager.postRequest("Tell me a joke!", model = "optional-model")
+val result = aiManager.postRequest("Tell me a joke!")
 println(result)
 ```
 - The library will automatically try all keys and providers in round-robin order until one succeeds.
-- You can specify a model per request, or set a default model per provider in code.
 - You can set the global API call timeout (in seconds) when creating `AiManager`. All providers will use this timeout for their network calls.
+- **The response from `postRequest` is always a plain string containing the assistant's reply.**
 
 ## How It Works
 - **Key/Provider Rotation**: Each request uses the next (provider, key) pair. If a request fails (after retries), the next pair is tried.
@@ -68,14 +83,12 @@ println(result)
 - **Model Selection**: Pass a model name to `postRequest`, or set a default model on the provider.
 
 ## Supported Providers
-| Provider      | Endpoint Example                                         | Auth Header Example                      |
-|--------------|----------------------------------------------------------|------------------------------------------|
-| Gemini       | https://generativelanguage.googleapis.com/v1beta/...      | Authorization: Bearer YOUR_API_KEY       |
-| Hugging Face | https://api-inference.huggingface.co/models/...          | Authorization: Bearer YOUR_HF_API_KEY    |
-| OpenRouter   | https://openrouter.ai/api/v1/chat/completions            | Authorization: Bearer YOUR_API_KEY       |
-| Groq         | https://api.groq.com/openai/v1/chat/completions           | Authorization: Bearer YOUR_API_KEY       |
-| ArliAI       | https://api.arliai.com/v1/chat/completions                | Authorization: Bearer YOUR_ARLIAI_API_KEY|
-| ShaleProtocol| https://shale.live/v1/chat/completions                    | Authorization: Bearer YOUR_API_KEY       |
+- Gemini
+- Hugging Face
+- OpenRouter
+- Groq
+- ArliAI
+- ShaleProtocol
 
 ## Error Handling
 - If all keys/providers fail, an exception is thrown with the last error details.
@@ -89,62 +102,8 @@ println(result)
 ## License
 MIT or your preferred license.
 
-## Test App
-
-A simple test app is included. To run it:
-
-1. Build and run the app on an emulator or device.
-2. On first launch, the app will create a `key_storage.yaml` file in your app's internal storage directory.
-3. Use Android Studio's Device File Explorer to navigate to `/data/data/himanshu.com.apikeymanager/files/key_storage.yaml` and add your API keys under `api_keys:` as shown above.
-4. Relaunch the app to see the API key displayed. Tap the button to cycle through keys.
-
 ## Response Format
 
-### HuggingFaceProvider
-- Returns only the assistant's reply as a string, but the raw response may include extra tags (e.g., <think>...</think>) and reasoning if the model provides it.
-- Example:
-  ```
-  <think>
-  ...model reasoning...
-  </think>
-  Hello! 👋 How can I assist you today? 😊
-  ```
-- The library extracts the main reply, but you may see extra context if the model includes it.
-
-### OpenRouterProvider
-- Returns the full JSON response from the OpenRouter API, which includes metadata and the assistant's reply.
-- Example:
-  ```json
-  {
-    "id": "gen-1751891938-Smap2Jtdrbwntrq5WbKn",
-    "provider": "Chutes",
-    "model": "mistralai/mistral-small-3.2-24b-instruct:free",
-    "object": "chat.completion",
-    "created": 1751891938,
-    "choices": [
-      {
-        "logprobs": null,
-        "finish_reason": "stop",
-        "native_finish_reason": "stop",
-        "index": 0,
-        "message": {
-          "role": "assistant",
-          "content": "Hello! 😊 How can I assist you today?",
-          "refusal": null,
-          "reasoning": null
-        }
-      }
-    ],
-    "usage": {
-      "prompt_tokens": 9,
-      "completion_tokens": 13,
-      "total_tokens": 22
-    }
-  }
-  ```
-- The library extracts the `choices[0].message.content` field as the main reply.
-
-### GroqProvider
 - Returns only the assistant's reply as a string.
 - Example:
   ```
