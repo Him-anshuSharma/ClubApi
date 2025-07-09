@@ -1,80 +1,78 @@
 package himanshu.com.apikeymanager
 
 import android.content.Context
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import android.util.Log
+import com.squareup.moshi.JsonClass
+import com.squareup.moshi.Moshi
+import com.squareup.moshi.Types
+import java.io.FileNotFoundException
+import java.io.InputStream
+import java.lang.reflect.Type
+
+@JsonClass(generateAdapter = true)
+data class ProviderConfig(
+    val keys: List<String> = listOf(),
+    val default_model: String? = null
+)
+
+@JsonClass(generateAdapter = true)
+data class KeyStorage(
+    val api_keys: Map<String, ProviderConfig> = mapOf()
+)
 
 class ApiKeyManager(private val context: Context) {
-    private val fileName = "key_storage.yaml"
-    private var apiKeys: Map<Any, List<String>> = mapOf()
+    private val fileName = "key_storage.json"
+    private var keyStorage: KeyStorage = KeyStorage()
     private var lastIndex = 0
-    private var providerConfigs: Map<String, Map<String, Any>> = mapOf()
 
     init {
         loadKeys()
     }
 
     private fun loadKeys() {
-        val mapper = ObjectMapper(YAMLFactory())
         try {
-            context.assets.open(fileName).use { inputStream ->
-                val data = mapper.readValue(inputStream, Map::class.java) as? Map<*, *>
-                val apiKeysSection = data?.get("api_keys") as? Map<*, *>
-                apiKeys = apiKeysSection?.entries
-                    ?.mapNotNull { entry ->
-                        val key = entry.key as? String ?: return@mapNotNull null
-                        val values = when (val v = entry.value) {
-                            is Map<*, *> -> (v["keys"] as? List<*>)?.filterIsInstance<String>() ?: listOf()
-                            is List<*> -> v.filterIsInstance<String>()
-                            is String -> listOf(v)
-                            else -> listOf()
-                        }
-                        key to values
-                    }?.toMap() ?: mapOf()
-                // Store the full config for each provider (for default_model)
-                providerConfigs = apiKeysSection?.entries
-                    ?.mapNotNull { entry ->
-                        val key = entry.key as? String ?: return@mapNotNull null
-                        val value = entry.value as? Map<String, Any> ?: mapOf<String, Any>()
-                        key to value.mapKeys { it.key.toString() }
-                    }?.toMap() ?: mapOf()
-            }
+            val inputStream: InputStream = context.assets.open(fileName)
+            val json = inputStream.bufferedReader().use { it.readText() }
+            val moshi = Moshi.Builder().build()
+            val adapter = moshi.adapter(KeyStorage::class.java)
+            keyStorage = adapter.fromJson(json) ?: KeyStorage()
+        } catch (e: FileNotFoundException) {
+            Log.d("CLUBAPI", "key_storage.json not found, using empty key storage.")
+            keyStorage = KeyStorage()
         } catch (e: Exception) {
-            apiKeys = mapOf()
-            providerConfigs = mapOf()
+            Log.d("CLUBAPI", "Failed to load key_storage.json: ${e.message}")
+            keyStorage = KeyStorage()
         }
     }
 
     fun getApiKeysForProvider(providerName: String): List<String> {
         loadKeys()
-        return apiKeys[providerName] ?: listOf()
+        return keyStorage.api_keys[providerName]?.keys ?: listOf()
     }
 
     fun getApiKeyForProvider(providerName: String): String? {
         loadKeys()
-        return apiKeys[providerName]?.firstOrNull()
+        return keyStorage.api_keys[providerName]?.keys?.firstOrNull()
     }
 
     @Synchronized
     fun getApiKey(): String {
         loadKeys()
-        if (apiKeys.isEmpty()) throw Exception("No API keys found!")
-        val key = apiKeys[(lastIndex % apiKeys.size)]?.firstOrNull()
-        lastIndex = (lastIndex + 1) % apiKeys.size
-        return key.toString()
+        val allKeys = keyStorage.api_keys.values.flatMap { it.keys }
+        if (allKeys.isEmpty()) throw Exception("No API keys found!")
+        val key = allKeys[(lastIndex % allKeys.size)]
+        lastIndex = (lastIndex + 1) % allKeys.size
+        return key
     }
 
-    // Optionally, expose all keys for custom rotation logic in the app
     fun getAllApiKeys(): List<String> {
         loadKeys()
-        return apiKeys.flatMap { it -> it.value }
+        return keyStorage.api_keys.values.flatMap { it.keys }
     }
 
     fun getDefaultModelForProvider(providerName: String): String? {
         loadKeys()
-        val config = providerConfigs[providerName]
-        return config?.get("default_model") as? String
+        return keyStorage.api_keys[providerName]?.default_model
     }
 }
 
