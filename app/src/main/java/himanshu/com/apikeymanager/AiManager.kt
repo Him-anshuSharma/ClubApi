@@ -4,7 +4,7 @@ import android.content.Context
 import android.util.Log
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import timber.log.Timber
+
 
 /**
  * AiManager manages AI provider requests, key rotation, model selection, and error handling.

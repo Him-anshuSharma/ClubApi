@@ -1,59 +1,80 @@
-Hello! 😊 How can I assist you today?
+# API Key Manager Android Library
 
-# API Key Manager (v3.x)
+This Android library provides a unified interface to interact with multiple AI providers (Gemini, HuggingFace, OpenRouter, Groq, ArliAI, ShaleProtocol) in your own Android projects. It manages API keys and model selection via a JSON config file, and handles provider selection, key rotation, and error handling automatically.
 
-## Overview
-This library manages API keys and model selection for multiple AI providers in your Android app. It now uses Moshi for JSON serialization and stores keys in `key_storage.json`.
+## What does it do?
+- Provides a unified interface to send prompts to multiple AI providers.
+- Manages API keys and model selection for each provider via a JSON config file (`key_storage.json` in your assets).
+- Handles provider selection, key rotation, and error handling automatically.
+- Returns the AI response as a `String` for each provider call.
 
-## Setup
+## Supported Providers
+- **Gemini** (Google)
+- **HuggingFace**
+- **OpenRouter**
+- **Groq**
+- **ArliAI**
+- **ShaleProtocol**
 
-1. **Add the dependency**
-   (If using JitPack or Maven, update as needed)
-   ```kotlin
-   implementation("com.github.Him-anshuSharma:ClubApi:v4.0.2")
-   implementation("com.squareup.moshi:moshi:1.15.0")
-   implementation("com.squareup.moshi:moshi-kotlin:1.15.0")
-   // No codegen or annotation processor needed!
+## Return Type
+- The main API returns a `String` containing the AI-generated response for the given prompt.
+- If an error occurs, an exception is thrown or an error message string is returned, depending on usage context.
+
+## How to Add to Your Project (via JitPack)
+
+### 1. Add JitPack to your repositories
+```kotlin
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        mavenCentral()
+        maven { url = uri("https://jitpack.io") }
+    }
+}
+```
+
+### 2. Add the dependency
+Replace `User`, `Repo`, and `Tag` with the correct values for this repository:
+```kotlin
+dependencies {
+    implementation("com.github.User:Repo:Tag")
+}
+```
+
+## How to Use
+
+1. **Add your API keys**
+   - Place a `key_storage.json` file in your app's `assets` directory:
+   ```json
+   {
+     "api_keys": {
+       "Gemini": {
+         "keys": ["YOUR_GEMINI_API_KEY"],
+         "default_model": "gemini-2.0-flash-lite"
+       },
+       "HuggingFace": {
+         "keys": ["YOUR_HUGGINGFACE_API_KEY"],
+         "default_model": "meta-llama/Llama-3.1-8B-Instruct"
+       }
+       // ... add other providers as needed
+     }
+   }
    ```
 
-2. **Add your API keys**
-   - Place a `key_storage.json` file in your app's `assets` directory:
-     ```json
-     {
-       "api_keys": {
-         "Gemini": {
-           "keys": ["your-gemini-key1"],
-           "default_model": "gemini-2.0-flash-lite"
-         },
-         "HuggingFace": {
-           "keys": ["your-huggingface-key1"],
-           "default_model": "meta-llama/Llama-3.1-8B-Instruct"
-         },
-         "OpenRouter": {
-           "keys": ["your-openrouter-key1"],
-           "default_model": "google/gemma-3-27b-it:free"
-         },
-         "Groq": {
-           "keys": ["your-groq-key1"],
-           "default_model": "llama-3.3-70b-versatile"
-         }
-       }
-     }
-     ```
-   - **Do not commit your real `key_storage.json` to version control!** Add it to your `.gitignore`.
-
-3. **Usage Example**
+2. **Call the library from your code**
    ```kotlin
    val apiKeyManager = ApiKeyManager(context)
    val aiManager = AiManager(context)
    val response = runBlocking { aiManager.postRequest("Your prompt here") }
    println(response)
    ```
-
-4. **Remove old YAML files (for 3.0.2 and older versions)**
-   - Delete any `key_storage.yaml` or similar files from your project.
+   - The library will automatically select a provider and key, send the prompt, and return the response as a String.
 
 ## Notes
-- All serialization is handled by Moshi **reflection** (no codegen, no annotation processor required).
-- Only `key_storage.json` is supported for key storage.
-- Make sure to keep your API keys secure and out of version control. 
+- Providers without API keys in the JSON file are skipped and not used.
+- Make sure you have a working internet connection.
+- API keys should be kept secure and not shared publicly.
+
+---
+
+Feel free to contribute or open issues for improvements! 
