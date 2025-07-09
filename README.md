@@ -10,7 +10,7 @@ This library manages API keys and model selection for multiple AI providers in y
 1. **Add the dependency**
    (If using JitPack or Maven, update as needed)
    ```kotlin
-   implementation("com.github.Him-anshuSharma:apikeymanager:3.0.2")
+   implementation("com.github.Him-anshuSharma:ClubApi:v4.0.2")
    implementation("com.squareup.moshi:moshi:1.15.0")
    implementation("com.squareup.moshi:moshi-kotlin:1.15.0")
    // No codegen or annotation processor needed!
