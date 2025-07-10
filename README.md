@@ -1,6 +1,10 @@
+
+
 # API Key Manager Android Library
 
 This Android library provides a unified interface to interact with multiple AI providers (Gemini, HuggingFace, OpenRouter, Groq, ArliAI, ShaleProtocol) in your own Android projects. It manages API keys and model selection via a JSON config file, and handles provider selection, key rotation, and error handling automatically.
+
+### [JitPack Link (Latest Release)](https://jitpack.io/#Him-anshuSharma/ClubApi)
 
 ## What does it do?
 - Provides a unified interface to send prompts to multiple AI providers.
@@ -37,7 +41,7 @@ dependencyResolutionManagement {
 Replace `User`, `Repo`, and `Tag` with the correct values for this repository:
 ```kotlin
 dependencies {
-    implementation("com.github.User:Repo:Tag")
+    implementation("com.github.Him-anshuSharma:ClubApi:v5.0.2")
 }
 ```
 
@@ -70,6 +74,41 @@ dependencies {
    ```
    - The library will automatically select a provider and key, send the prompt, and return the response as a String.
 
+## ProGuard/R8 Rules
+If you use ProGuard or R8, add the following rules to your `proguard-rules.pro` to ensure proper operation and JSON parsing:
+
+```proguard
+# --- Keep all classes and members in your API key manager library ---
+-keep class himanshu.com.apikeymanager.** { *; }
+-keepclassmembers class himanshu.com.apikeymanager.** { *; }
+
+# --- Keep data classes for JSON parsing (Moshi/Gson) ---
+-keep class himanshu.com.apikeymanager.ProviderConfig { *; }
+-keep class himanshu.com.apikeymanager.KeyStorage { *; }
+
+
+# --- Moshi (for Kotlin reflection, codegen, adapters) ---
+-keep class com.squareup.moshi.** { *; }
+-keep @com.squareup.moshi.JsonClass class * { *; }
+-keepclassmembers class * {
+    @com.squareup.moshi.* <fields>;
+    @com.squareup.moshi.* <methods>;
+}
+-keep class kotlin.Metadata { *; }
+-keep class kotlin.reflect.** { *; }
+-keep class com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory { *; }
+-dontwarn com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
+-dontwarn kotlin.reflect.jvm.internal.**
+-dontwarn org.yaml.snakeyaml.Yaml
+
+# --- Gson (if used) ---
+-keep class com.google.gson.** { *; }
+
+# --- Keep annotation attributes and signatures (important for Moshi/Gson) ---
+-keepattributes *Annotation*
+-keepattributes Signature
+```
+
 ## Notes
 - Providers without API keys in the JSON file are skipped and not used.
 - Make sure you have a working internet connection.
@@ -77,4 +116,4 @@ dependencies {
 
 ---
 
-Feel free to contribute or open issues for improvements! 
+Feel free to contribute or open issues for improvements!
